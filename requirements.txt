@@ -8,3 +8,6 @@ pinecone-client
 tiktoken
 matplotlib
 plotly
+scipy
+scikit-learn
+pandas
