@@ -7,3 +7,4 @@ openai
 pinecone-client
 tiktoken
 matplotlib
+plotly
