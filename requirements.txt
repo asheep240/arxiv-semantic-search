@@ -6,3 +6,4 @@ numpy
 openai
 pinecone-client
 tiktoken
+matplotlib
