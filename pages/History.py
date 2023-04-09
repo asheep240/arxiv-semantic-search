@@ -1,5 +1,5 @@
 import streamlit as st
-import QuestionFunctions as qf
+import question_functions as qf
 import pandas as pd
 import time
 

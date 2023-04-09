@@ -1,15 +1,11 @@
 import streamlit as st
 import question_functions as qf
-import pandas as pd
-
 
 if __name__ == "__main__":
     st.set_page_config(page_title="GPT Scholar")
     archive = st.selectbox("Archive", ["Plasma Physics", "Biology"])
 
     if archive == "Plasma Physics":
-        df = pd.read_pickle("./8500abstracts.pkl")
-
         st.title("ArXiV Semantic Search")
 
         if "history" not in st.session_state:
@@ -20,7 +16,7 @@ if __name__ == "__main__":
         progress = st.progress(0)
 
         if st.button("Search"):
-            answer, metadata = qf.answer_question(df, question=userQuestion)
+            answer, metadata = qf.answer_question(question=userQuestion)
 
             st.write("#### Question")
             st.write(userQuestion)
@@ -30,7 +26,7 @@ if __name__ == "__main__":
             st.write(answer)
 
             st.write("#### References")
-            for i in range(8):
+            for i in range(len(metadata["title"])):
                 with st.expander(metadata["title"][i]):
                     st.write("Date: " + metadata["date"][i])
                     st.write("Short ID: " + metadata["short_id"][i])

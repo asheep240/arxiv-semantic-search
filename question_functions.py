@@ -1,6 +1,6 @@
 import os
 
-import openai
+import openai, pinecone
 from collections import defaultdict
 from openai.embeddings_utils import get_embedding, distances_from_embeddings
 import streamlit as st
@@ -9,7 +9,7 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
 @st.cache_data
-def create_context(question, df, max_len=1800, size="ada"):
+def create_context(question, max_len=4000, size="ada"):
     """
     Create a context for a question by finding the most similar context from the dataframe
     """
@@ -17,8 +17,12 @@ def create_context(question, df, max_len=1800, size="ada"):
     # Get the embeddings for the question
     q_embeddings = get_embedding(text=question, engine="text-embedding-ada-002")
 
+    pinecone.init(api_key=os.environ["PINECONE_API_KEY"], environment="us-east1-gcp")
+
+    index = pinecone.Index("plasma-physics-arxiv")
     # Get the distances from the embeddings
-    df["distances"] = distances_from_embeddings(q_embeddings, df["embedding"].values, distance_metric="cosine")
+    # df["distances"] = distances_from_embeddings(q_embeddings, df["embedding"].values, distance_metric="cosine")
+    res = index.query(q_embeddings, top_k=20, include_metadata=True)
 
     returns = []
     metadata = defaultdict(list)
@@ -26,20 +30,20 @@ def create_context(question, df, max_len=1800, size="ada"):
     cur_len = 0
 
     # Sort by distance and add the text to the context until the context is too long
-    for i, row in df.sort_values("distances", ascending=True).iterrows():
+    for i, row in enumerate(res["matches"]):
         # Add the length of the text to the current length
-        cur_len += row["n_tokens"] + 4
+        cur_len += int(row["metadata"]["n_tokens"]) + 4
 
         # If the context is too long, break
         if cur_len > max_len:
             break
 
         # Else add it to the text that is being returned
-        returns.append(row["abstract"])
-        metadata["title"].append(row["title"])
-        metadata["date"].append(row["date"])
+        returns.append(row["metadata"]["abstract"])
+        metadata["title"].append(row["metadata"]["title"])
+        metadata["date"].append(row["metadata"]["date"])
         # metadata["authors"].append(row["authors"])
-        metadata["short_id"].append(row["short_id"])
+        metadata["short_id"].append(row["metadata"]["short_id"])
 
     # Return the context
     return "\n\n###\n\n".join(returns), metadata
@@ -47,10 +51,9 @@ def create_context(question, df, max_len=1800, size="ada"):
 
 @st.cache_data
 def answer_question(
-    df,
     model="text-davinci-003",
     question="Am I allowed to publish model outputs to Twitter, without a human review?",
-    max_len=1800,
+    max_len=4000,
     size="ada",
     debug=False,
     max_tokens=500,
@@ -61,7 +64,6 @@ def answer_question(
     """
     context, metadata = create_context(
         question,
-        df,
         max_len=max_len,
         size=size,
     )
@@ -82,10 +84,15 @@ def answer_question(
                 },
             ],
         )
-        print(response)
 
         return response["choices"][0]["message"]["content"].strip(), metadata
 
     except Exception as e:
         print(e)
         return ""
+
+
+if __name__ == "__main__":
+    answer, metadata = answer_question(question="What is the role of mix in inertial fusion?")
+
+
