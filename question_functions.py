@@ -6,7 +6,7 @@ from openai.embeddings_utils import get_embedding, distances_from_embeddings
 import streamlit as st
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
-
+pinecone.init(api_key=os.environ["PINECONE_API_KEY"], environment="us-east1-gcp")
 
 @st.cache_data
 def create_context(question, max_len=4000, size="ada"):
@@ -16,8 +16,6 @@ def create_context(question, max_len=4000, size="ada"):
 
     # Get the embeddings for the question
     q_embeddings = get_embedding(text=question, engine="text-embedding-ada-002")
-
-    pinecone.init(api_key=os.environ["PINECONE_API_KEY"], environment="us-east1-gcp")
 
     index = pinecone.Index("plasma-physics-arxiv")
     # Get the distances from the embeddings

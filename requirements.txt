@@ -1,0 +1,8 @@
+<!-- requirements -->
+
+arxiv
+streamlit
+numpy 
+openai
+pinecone-client
+tiktoken
